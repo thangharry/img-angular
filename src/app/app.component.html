@@ -76,7 +76,7 @@
       </div>
     </nz-header>
     <nz-content>
-      <div class="inner-content">
+      <div class="inner-content ,example-boundary">
         <router-outlet>
           <div
             class="shape"
@@ -92,6 +92,8 @@
             (mouseover)="isHovered = true"
             (mouseout)="isHovered = false"
             [ngClass]="shape.hoverEffect"
+            (cdkDragStarted)="onDragStart(shape)"
+            (cdkDragEnded)="onDragEnd(shape, $event)"
           ></div>
         </router-outlet>
       </div>

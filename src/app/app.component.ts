@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CdkDragEnd } from '@angular/cdk/drag-drop';
 
 @Component({
@@ -6,16 +6,33 @@ import { CdkDragEnd } from '@angular/cdk/drag-drop';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   isCollapsed = false;
   deleteShapeIndex: number | null = null;
   shapes: any[] = [];
   currentShape: any = null;
   isHovered: boolean = false;
+  innerContentElement: ElementRef<HTMLElement> | undefined;
+  @ViewChild('innerContent', { static: true }) innerContent:
+    | ElementRef
+    | undefined;
+
+  ngAfterViewInit() {
+    // Thêm kiểm tra để đảm bảo innerContentElement không phải là undefined
+    if (this.innerContent) {
+      this.innerContentElement = this.innerContent.nativeElement;
+    }
+  }
   ngOnInit() {
+    console.log('ngOnInt called');
     const savedShapes = localStorage.getItem('shapes');
+    console.log('Saved Shapes:', savedShapes);
     if (savedShapes) {
       this.shapes = JSON.parse(savedShapes);
+    }
+    // Lấy tham chiếu đến phần tử "inner-content"
+    if (this.innerContent) {
+      this.innerContentElement = this.innerContent.nativeElement;
     }
   }
 
@@ -80,7 +97,7 @@ export class AppComponent {
       console.log('Shapes:', this.shapes); // Log shapes array to the console
       this.currentShape = newShape;
       localStorage.setItem('shapes', JSON.stringify(this.shapes));
-
+      console.log('Shapes after creating:', this.shapes);
       // newShape.showDelete = false;
     }
   }
@@ -117,19 +134,46 @@ export class AppComponent {
 
   onDragEnd(shape: any, event: CdkDragEnd) {
     const newPosition = event.source.getFreeDragPosition();
-    shape.style.left = `${newPosition.x}px`;
-    shape.style.top = `${newPosition.y}px`;
+    // const distanceX = event.distance.x;
+    // const distanceY = event.distance.y;
     const shapeIndex = this.shapes.findIndex((s) => s === shape);
+    // shape.style.left = `${parseFloat(shape.style.left) + distanceX}px`;
+    // shape.style.top = `${parseFloat(shape.style.top) + distanceY}px`;
+
     if (shapeIndex > -1) {
-      this.shapes[shapeIndex].style.left = `${newPosition.x}px`;
-      this.shapes[shapeIndex].style.top = `${newPosition.y}px`;
+      // this.shapes[shapeIndex].style.left = `${
+      //   parseFloat(shape.style.left) + distanceX
+      // }px`;
+      // this.shapes[shapeIndex].style.top = `${
+      //   parseFloat(shape.style.top) + distanceY
+      // }px`;
+      if (this.innerContentElement && this.innerContentElement.nativeElement) {
+        // Lấy kích thước của phần tử "inner-content"
+        const containerRect =
+          this.innerContentElement.nativeElement.getBoundingClientRect();
+
+        // Kiểm tra và điều chỉnh vị trí nếu hình vượt quá biên
+        const adjustedPosition = {
+          x: Math.min(Math.max(newPosition.x, 0), containerRect.width - 50),
+          y: Math.min(Math.max(newPosition.y, 0), containerRect.height - 50),
+        };
+
+        this.shapes[shapeIndex].style.left = `${adjustedPosition.x}px`;
+        this.shapes[shapeIndex].style.top = `${adjustedPosition.y}px`;
+
+        localStorage.setItem('shapes', JSON.stringify(this.shapes));
+      }
+
+      this.shapes[shapeIndex].style.left = `${newPosition.x}`;
+      this.shapes[shapeIndex].style.top = `${newPosition.y}`;
+      localStorage.setItem('shapes', JSON.stringify(this.shapes));
     }
-    localStorage.setItem('shapes', JSON.stringify(this.shapes));
     //
-    if (shape.hoverEffect === 'zoom') {
-      shape.style.transform = 'scale(1.4)';
-    }
+    // if (shape.hoverEffect === 'zoom') {
+    //   shape.style.transform = 'scale(1.4)';
+    // }
     //
+    console.log('Updated Shapes:', this.shapes);
     if (this.isHovered) {
       this.setHoverEffect(this.currentShape.hoverEffect);
     } else {
@@ -138,9 +182,5 @@ export class AppComponent {
     }
 
     this.isHovered = false;
-  }
-  onShapeHover(shape: any) {
-    this.currentShape = shape;
-    this.isHovered = true;
   }
 }
